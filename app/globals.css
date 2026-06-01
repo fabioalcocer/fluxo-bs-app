@@ -1,0 +1,225 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: #050816;
+  --foreground: #ecf1ff;
+  --card: #0d1428cc;
+  --card-foreground: #ecf1ff;
+  --popover: #08101fcc;
+  --popover-foreground: #ecf1ff;
+  --primary: #8af7d3;
+  --primary-foreground: #041119;
+  --secondary: #18213b;
+  --secondary-foreground: #e4e9f7;
+  --muted: #10192f;
+  --muted-foreground: #97a5c6;
+  --accent: #15203b;
+  --accent-foreground: #eef2ff;
+  --destructive: #ff6b8f;
+  --border: #ffffff14;
+  --input: #ffffff12;
+  --ring: #6cf8c8;
+  --chart-1: #6cf8c8;
+  --chart-2: #75b7ff;
+  --chart-3: #d9a8ff;
+  --chart-4: #ffcf72;
+  --chart-5: #fe7ba8;
+  --radius: 0.75rem;
+  --sidebar: #08101f;
+  --sidebar-foreground: #ecf1ff;
+  --sidebar-primary: #8af7d3;
+  --sidebar-primary-foreground: #041119;
+  --sidebar-accent: #15203b;
+  --sidebar-accent-foreground: #eef2ff;
+  --sidebar-border: #ffffff14;
+  --sidebar-ring: #6cf8c8;
+  --app-surface: #0a1224;
+  --app-surface-2: #101b33;
+  --app-glow: #6cf8c81e;
+  --app-glow-strong: #77b8ff30;
+  --app-grid: #ffffff0b;
+}
+
+.light {
+  --background: #f4f7ff;
+  --foreground: #0d1831;
+  --card: #ffffffd8;
+  --card-foreground: #0d1831;
+  --popover: #ffffffec;
+  --popover-foreground: #0d1831;
+  --primary: #0a7f68;
+  --primary-foreground: #f7fffd;
+  --secondary: #dde8ff;
+  --secondary-foreground: #12203e;
+  --muted: #e9effd;
+  --muted-foreground: #597096;
+  --accent: #e0ebff;
+  --accent-foreground: #0d1831;
+  --destructive: #d83e69;
+  --border: #10203a14;
+  --input: #10203a12;
+  --ring: #0a7f68;
+  --chart-1: #0a7f68;
+  --chart-2: #2568d8;
+  --chart-3: #8b4ae6;
+  --chart-4: #e6a12a;
+  --chart-5: #d83e69;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0d1831;
+  --sidebar-primary: #0a7f68;
+  --sidebar-primary-foreground: #f7fffd;
+  --sidebar-accent: #e0ebff;
+  --sidebar-accent-foreground: #0d1831;
+  --sidebar-border: #10203a14;
+  --sidebar-ring: #0a7f68;
+  --app-surface: #ffffff;
+  --app-surface-2: #eef4ff;
+  --app-glow: #0a7f680d;
+  --app-glow-strong: #2568d814;
+  --app-grid: #10203a0a;
+}
+
+@theme inline {
+  --font-sans: var(--font-body);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.78);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.12);
+  --radius-2xl: calc(var(--radius) * 1.42);
+  --radius-3xl: calc(var(--radius) * 1.72);
+  --font-heading: var(--font-manrope);
+  --font-body: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-body;
+  }
+
+  body {
+    @apply min-h-svh bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(circle at top left, var(--app-glow-strong), transparent 28%),
+      radial-gradient(circle at 80% 10%, var(--app-glow), transparent 22%),
+      linear-gradient(180deg, color-mix(in oklab, var(--background) 86%, #0b1834 14%), var(--background));
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(var(--app-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--app-grid) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.8), transparent 92%);
+    opacity: 0.45;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    letter-spacing: 0;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 4.2vw, 3.9rem);
+    font-weight: 700;
+    line-height: 1.02;
+  }
+
+  h2 {
+    font-size: clamp(1.6rem, 3vw, 2.3rem);
+    font-weight: 650;
+    line-height: 1.05;
+  }
+
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 650;
+    line-height: 1.12;
+  }
+
+  code,
+  pre {
+    font-family: var(--font-mono);
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 45%, transparent);
+    color: var(--foreground);
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    background:
+      linear-gradient(180deg, color-mix(in oklab, var(--card) 92%, white 8%), color-mix(in oklab, var(--card) 98%, black 2%));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 18px 54px rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(18px);
+  }
+
+  .data-grid-fade {
+    mask-image: linear-gradient(180deg, black 70%, transparent);
+  }
+
+  .metric-glow {
+    text-shadow: 0 0 24px color-mix(in oklab, var(--primary) 30%, transparent);
+  }
+
+  .surface-outline {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+}

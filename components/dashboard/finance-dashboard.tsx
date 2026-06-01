@@ -53,8 +53,6 @@ import type {
 } from '@/types/finance'
 import { cn } from '@/lib/utils'
 
-type DashboardTab = 'spending' | 'exchange' | 'categories'
-
 function reviveFinanceState(value: unknown, initialMonthKey: string): FinanceAppState {
   const initialState = createInitialFinanceState(initialMonthKey)
 
@@ -129,7 +127,6 @@ export function FinanceDashboard({
     date: referenceDateIso,
     note: '',
   })
-  const [activeTab, setActiveTab] = useState<DashboardTab>('spending')
   const [themeMounted, setThemeMounted] = useState(false)
   const { resolvedTheme, setTheme } = useTheme()
 
@@ -293,31 +290,50 @@ export function FinanceDashboard({
           </div>
         </motion.section>
 
-        <section className="grid gap-4">
+        <section className="group/tabs grid gap-4">
+          <input
+            className="sr-only"
+            defaultChecked
+            id="tab-spending"
+            name="dashboard-tab"
+            type="radio"
+          />
+          <input
+            className="sr-only"
+            id="tab-exchange"
+            name="dashboard-tab"
+            type="radio"
+          />
+          <input
+            className="sr-only"
+            id="tab-categories"
+            name="dashboard-tab"
+            type="radio"
+          />
           <div className="glass-panel surface-outline rounded-2xl border border-white/10 bg-card/80 p-2">
             <div className="grid gap-2 sm:grid-cols-3">
-              <TabButton
-                active={activeTab === 'spending'}
+              <TabLabel
+                activeClassName="group-has-[#tab-spending:checked]/tabs:border-primary/30 group-has-[#tab-spending:checked]/tabs:bg-primary group-has-[#tab-spending:checked]/tabs:text-primary-foreground group-has-[#tab-spending:checked]/tabs:shadow-xs"
+                htmlFor="tab-spending"
                 icon={<GaugeIcon />}
                 label="Gastos"
-                onClick={() => setActiveTab('spending')}
               />
-              <TabButton
-                active={activeTab === 'exchange'}
+              <TabLabel
+                activeClassName="group-has-[#tab-exchange:checked]/tabs:border-primary/30 group-has-[#tab-exchange:checked]/tabs:bg-primary group-has-[#tab-exchange:checked]/tabs:text-primary-foreground group-has-[#tab-exchange:checked]/tabs:shadow-xs"
+                htmlFor="tab-exchange"
                 icon={<ArrowsLeftRightIcon />}
                 label="Cambio"
-                onClick={() => setActiveTab('exchange')}
               />
-              <TabButton
-                active={activeTab === 'categories'}
+              <TabLabel
+                activeClassName="group-has-[#tab-categories:checked]/tabs:border-primary/30 group-has-[#tab-categories:checked]/tabs:bg-primary group-has-[#tab-categories:checked]/tabs:text-primary-foreground group-has-[#tab-categories:checked]/tabs:shadow-xs"
+                htmlFor="tab-categories"
                 icon={<ChartPieSliceIcon />}
                 label="Categorias"
-                onClick={() => setActiveTab('categories')}
               />
             </div>
           </div>
 
-          {activeTab === 'spending' && (
+          <div className="hidden group-has-[#tab-spending:checked]/tabs:block">
             <Card className="glass-panel surface-outline rounded-2xl border-white/10 bg-card/80">
               <CardHeader className="gap-2 px-4 pt-4 sm:px-5 sm:pt-5">
                 <div className="flex flex-wrap items-start justify-between gap-4">
@@ -529,9 +545,9 @@ export function FinanceDashboard({
                 </div>
               </CardContent>
             </Card>
-          )}
+          </div>
 
-          {activeTab === 'exchange' && (
+          <div className="hidden group-has-[#tab-exchange:checked]/tabs:block">
             <Card className="glass-panel surface-outline rounded-2xl border-white/10 bg-card/80">
               <CardHeader className="px-4 pt-4 sm:px-5 sm:pt-5">
                 <CardTitle className="text-lg">Calculadora de cambio</CardTitle>
@@ -539,8 +555,8 @@ export function FinanceDashboard({
                   Compara cuanto ganas o pierdes en Bs segun el tipo de cambio usado.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="grid gap-4 px-4 pb-4 sm:px-5 sm:pb-5 lg:grid-cols-[0.95fr_1.05fr]">
-                <div className="grid gap-3">
+              <CardContent className="grid gap-4 px-4 pb-4 sm:px-5 sm:pb-5">
+                <div className="grid gap-3 md:grid-cols-3">
                   <div className="grid gap-2">
                     <Label htmlFor="fx-amount">Monto en USDC</Label>
                     <Input
@@ -558,45 +574,43 @@ export function FinanceDashboard({
                       value={state.fxCalculator.amountUsdc || ''}
                     />
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <div className="grid gap-2">
-                      <Label htmlFor="fx-current">Cambio usado</Label>
-                      <Input
-                        id="fx-current"
-                        inputMode="decimal"
-                        onChange={(event) =>
-                          setState((currentState) => ({
-                            ...currentState,
-                            fxCalculator: {
-                              ...currentState.fxCalculator,
-                              currentRate: toPositiveNumber(event.target.value),
-                            },
-                          }))
-                        }
-                        value={state.fxCalculator.currentRate || ''}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="fx-reference">Cambio referencia</Label>
-                      <Input
-                        id="fx-reference"
-                        inputMode="decimal"
-                        onChange={(event) =>
-                          setState((currentState) => ({
-                            ...currentState,
-                            fxCalculator: {
-                              ...currentState.fxCalculator,
-                              referenceRate: toPositiveNumber(event.target.value),
-                            },
-                          }))
-                        }
-                        value={state.fxCalculator.referenceRate || ''}
-                      />
-                    </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="fx-current">Cambio usado</Label>
+                    <Input
+                      id="fx-current"
+                      inputMode="decimal"
+                      onChange={(event) =>
+                        setState((currentState) => ({
+                          ...currentState,
+                          fxCalculator: {
+                            ...currentState.fxCalculator,
+                            currentRate: toPositiveNumber(event.target.value),
+                          },
+                        }))
+                      }
+                      value={state.fxCalculator.currentRate || ''}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="fx-reference">Cambio referencia</Label>
+                    <Input
+                      id="fx-reference"
+                      inputMode="decimal"
+                      onChange={(event) =>
+                        setState((currentState) => ({
+                          ...currentState,
+                          fxCalculator: {
+                            ...currentState.fxCalculator,
+                            referenceRate: toPositiveNumber(event.target.value),
+                          },
+                        }))
+                      }
+                      value={state.fxCalculator.referenceRate || ''}
+                    />
                   </div>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                   <StatCard
                     icon={<CoinIcon size={18} />}
                     label="Recibes al cambio usado"
@@ -635,9 +649,9 @@ export function FinanceDashboard({
                 </div>
               </CardContent>
             </Card>
-          )}
+          </div>
 
-          {activeTab === 'categories' && (
+          <div className="hidden group-has-[#tab-categories:checked]/tabs:block">
           <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
             <Card className="glass-panel surface-outline rounded-2xl border-white/10 bg-card/80">
               <CardHeader className="px-4 pt-4 sm:px-5 sm:pt-5">
@@ -699,39 +713,35 @@ export function FinanceDashboard({
               </CardContent>
             </Card>
           </div>
-          )}
+          </div>
         </section>
       </div>
     </div>
   )
 }
 
-function TabButton({
-  active,
+function TabLabel({
+  activeClassName,
+  htmlFor,
   icon,
   label,
-  onClick,
 }: {
-  active: boolean
+  activeClassName: string
+  htmlFor: string
   icon: ReactNode
   label: string
-  onClick: () => void
 }) {
   return (
-    <button
-      aria-pressed={active}
+    <label
       className={cn(
-        'flex h-11 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-colors',
-        active
-          ? 'border-primary/30 bg-primary text-primary-foreground shadow-xs'
-          : 'border-transparent bg-transparent text-muted-foreground hover:bg-white/5 hover:text-foreground'
+        'flex h-11 items-center justify-center gap-2 rounded-xl border border-transparent px-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground',
+        activeClassName
       )}
-      onClick={onClick}
-      type="button"
+      htmlFor={htmlFor}
     >
       <span className="text-base leading-none">{icon}</span>
       {label}
-    </button>
+    </label>
   )
 }
 

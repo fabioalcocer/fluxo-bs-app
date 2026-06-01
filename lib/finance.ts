@@ -15,11 +15,26 @@ import type {
 
 export const STORAGE_KEY = 'finance-app:v1'
 
+export const DEFAULT_CATEGORIES = [
+  'Ayudas',
+  'Almuerzos',
+  'Comida rapida',
+  'Cafeterias',
+  'Despensa',
+  'Fiestas',
+  'Transporte'
+]
+
 export function createEmptyMonthState(): MonthBudgetState {
+  const categoryBudgets: Record<string, number> = {}
+  for (const cat of DEFAULT_CATEGORIES) {
+    categoryBudgets[cat] = 0
+  }
   return {
     totalBudgetBs: 0,
     mode: 'remaining-month',
     entries: [],
+    categoryBudgets,
   }
 }
 
@@ -89,10 +104,10 @@ export function calculateSpendingSummary(
   const remainingBudget = monthState.totalBudgetBs - totalSpent
   const dailyAllowance = remainingBudget / Math.max(activeDaysCount, 1)
   const weeklyAllowance = remainingBudget / Math.max(activeWeeksCount, 1)
-  const baselineWeekPlan = monthState.totalBudgetBs / Math.max(totalWeeksInMonth, 1)
   const projectedMonthEnd = monthState.totalBudgetBs === 0 ? 0 : remainingBudget
 
-  const weekBreakdown = weekRanges.map((range) => {
+  let runningBudget = monthState.totalBudgetBs
+  const weekBreakdown = weekRanges.map((range, index) => {
     const spent = monthState.entries
       .filter((entry) => {
         const day = getDayInMonthFromIso(entry.date)
@@ -100,11 +115,23 @@ export function calculateSpendingSummary(
       })
       .reduce((sum, entry) => sum + entry.amountBs, 0)
 
+    const weeksRemaining = weekRanges.length - index
+    const planned = runningBudget / Math.max(weeksRemaining, 1)
+
+    const isPast = currentDay > range.endDay
+    const hasOverspent = spent > planned
+
+    if (isPast || hasOverspent) {
+      runningBudget = Math.max(0, runningBudget - spent)
+    } else {
+      runningBudget = Math.max(0, runningBudget - planned)
+    }
+
     return {
       range,
       spent,
-      planned: baselineWeekPlan,
-      deviation: spent - baselineWeekPlan,
+      planned,
+      deviation: spent - planned,
       isActive:
         effectiveMode === 'full-month' ? true : range.endDay >= currentDay,
     }
@@ -142,6 +169,13 @@ export function calculateFxDifference(values: FxCalculatorState) {
 }
 
 export function sanitizeMonthState(state: MonthBudgetState): MonthBudgetState {
+  const categoryBudgets: Record<string, number> = {}
+  const rawBudgets = state.categoryBudgets || {}
+  for (const cat of DEFAULT_CATEGORIES) {
+    const val = rawBudgets[cat]
+    categoryBudgets[cat] = typeof val === 'number' && Number.isFinite(val) ? val : 0
+  }
+
   return {
     totalBudgetBs: Number.isFinite(state.totalBudgetBs) ? state.totalBudgetBs : 0,
     mode: state.mode === 'full-month' ? 'full-month' : 'remaining-month',
@@ -158,7 +192,9 @@ export function sanitizeMonthState(state: MonthBudgetState): MonthBudgetState {
             ...entry,
             amountBs: Number(entry.amountBs),
             note: entry.note?.trim() || undefined,
+            category: typeof entry.category === 'string' ? entry.category.trim() : undefined,
           }))
       : [],
+    categoryBudgets,
   }
 }

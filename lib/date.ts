@@ -54,19 +54,32 @@ export function getCurrentDayOfMonth(today = new Date()) {
 
 export function getMonthWeekRanges(monthKey: string): WeekRange[] {
   const totalDays = getDaysInMonth(monthKey)
-  const totalWeeks = Math.ceil(totalDays / 7)
+  const ranges: WeekRange[] = []
+  let currentStart = 1
 
-  return Array.from({ length: totalWeeks }, (_, index) => {
-    const startDay = index * 7 + 1
-    const endDay = Math.min(startDay + 6, totalDays)
+  while (currentStart <= totalDays) {
+    const currentEnd = currentStart + 6
 
-    return {
-      index,
-      startDay,
-      endDay,
-      label: `Semana ${index + 1}`,
+    if (totalDays - currentEnd < 7) {
+      ranges.push({
+        index: ranges.length,
+        startDay: currentStart,
+        endDay: totalDays,
+        label: `Semana ${ranges.length + 1}`,
+      })
+      break
+    } else {
+      ranges.push({
+        index: ranges.length,
+        startDay: currentStart,
+        endDay: currentEnd,
+        label: `Semana ${ranges.length + 1}`,
+      })
+      currentStart = currentEnd + 1
     }
-  })
+  }
+
+  return ranges
 }
 
 export function getDayInMonthFromIso(date: string) {

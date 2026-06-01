@@ -8,12 +8,14 @@ export interface SpendingEntry {
   date: string
   amountBs: number
   note?: string
+  category?: string
 }
 
 export interface MonthBudgetState {
   totalBudgetBs: number
   mode: PlanningMode
   entries: SpendingEntry[]
+  categoryBudgets?: Record<string, number>
 }
 
 export interface FxCalculatorState {

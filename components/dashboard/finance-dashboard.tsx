@@ -218,7 +218,7 @@ export function FinanceDashboard({
   const latestEntries = useMemo(() => {
     return [...selectedMonthState.entries]
       .sort((left, right) => right.date.localeCompare(left.date))
-      .slice(0, 6)
+      .slice(0, 2)
   }, [selectedMonthState.entries])
 
   function updateMonthState(updater: (month: MonthBudgetState) => MonthBudgetState) {
@@ -417,6 +417,7 @@ export function FinanceDashboard({
                   referenceDateIso={referenceDateIso}
                   onAddEntry={addEntry}
                   onDeleteEntry={deleteEntry}
+                  onViewAll={() => setActiveTab('categories')}
                 />
               </motion.div>
             )}
@@ -433,6 +434,7 @@ export function FinanceDashboard({
                   monthLabel={getMonthLabel(activeMonthKey)}
                   onBudgetChange={updateCategoryBudget}
                   onDistributeEquitably={distributeEquitably}
+                  onDeleteEntry={deleteEntry}
                 />
               </motion.div>
             )}

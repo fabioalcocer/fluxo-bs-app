@@ -45,42 +45,107 @@
 }
 
 .light {
-  --background: #f4f7ff;
-  --foreground: #0d1831;
-  --card: #ffffffd8;
-  --card-foreground: #0d1831;
-  --popover: #ffffffec;
-  --popover-foreground: #0d1831;
-  --primary: #0a7f68;
-  --primary-foreground: #f7fffd;
-  --secondary: #dde8ff;
-  --secondary-foreground: #12203e;
-  --muted: #e9effd;
-  --muted-foreground: #597096;
-  --accent: #e0ebff;
-  --accent-foreground: #0d1831;
-  --destructive: #d83e69;
-  --border: #10203a14;
-  --input: #10203a12;
-  --ring: #0a7f68;
-  --chart-1: #0a7f68;
-  --chart-2: #2568d8;
-  --chart-3: #8b4ae6;
-  --chart-4: #e6a12a;
-  --chart-5: #d83e69;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #0d9488;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f8fafc;
+  --muted-foreground: #475569;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --destructive: #e11d48;
+  --border: #e2e8f0;
+  --input: #cbd5e1;
+  --ring: #0d9488;
+  --chart-1: #0d9488;
+  --chart-2: #2563eb;
+  --chart-3: #7c3aed;
+  --chart-4: #d97706;
+  --chart-5: #e11d48;
   --sidebar: #ffffff;
-  --sidebar-foreground: #0d1831;
-  --sidebar-primary: #0a7f68;
-  --sidebar-primary-foreground: #f7fffd;
-  --sidebar-accent: #e0ebff;
-  --sidebar-accent-foreground: #0d1831;
-  --sidebar-border: #10203a14;
-  --sidebar-ring: #0a7f68;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #0d9488;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #0d9488;
   --app-surface: #ffffff;
-  --app-surface-2: #eef4ff;
-  --app-glow: #0a7f680d;
-  --app-glow-strong: #2568d814;
-  --app-grid: #10203a0a;
+  --app-surface-2: #f1f5f9;
+  --app-glow: rgba(13, 148, 136, 0.05);
+  --app-glow-strong: rgba(37, 99, 235, 0.06);
+  --app-grid: rgba(15, 23, 42, 0.04);
+}
+
+/* Redefine transparent white borders and backgrounds in light mode */
+.light .border-white\/8,
+.light .border-white\/7,
+.light .border-white\/10 {
+  border-color: var(--border) !important;
+}
+
+.light .bg-white\/3,
+.light .bg-white\/4,
+.light .bg-white\/5 {
+  background-color: var(--secondary) !important;
+}
+
+.light .bg-background\/35 {
+  background-color: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(8px);
+}
+
+.light .hover\:border-white\/15:hover {
+  border-color: var(--input) !important;
+}
+
+.light .hover\:bg-white\/5:hover {
+  background-color: var(--border) !important;
+}
+
+.light .text-white\/10 {
+  color: var(--border) !important;
+}
+
+/* Ensure form controls are visible and crisp in light mode */
+.light input.bg-white\/3,
+.light select.bg-white\/3,
+.light button.bg-white\/3,
+.light [role="combobox"].bg-white\/3,
+.light .bg-background\/50 {
+  background-color: #ffffff !important;
+  border-color: var(--input) !important;
+  color: var(--foreground) !important;
+}
+
+.light input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Soft, modern shadows for card panels in light mode */
+.light .glass-panel {
+  background: rgba(255, 255, 255, 0.8) !important;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.02),
+    0 8px 24px rgba(15, 23, 42, 0.04) !important;
+  border-color: var(--border) !important;
+}
+
+.light .surface-outline {
+  box-shadow: none !important;
+}
+
+.light body {
+  background-image:
+    radial-gradient(circle at top left, var(--app-glow-strong), transparent 28%),
+    radial-gradient(circle at 80% 10%, var(--app-glow), transparent 22%),
+    linear-gradient(180deg, color-mix(in oklab, var(--background) 92%, #e2e8f0 8%), var(--background)) !important;
 }
 
 @theme inline {

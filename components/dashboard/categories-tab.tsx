@@ -1,13 +1,20 @@
 'use client'
 
 import { useMemo, useState, useEffect, type ReactNode } from 'react'
-import { ArrowArcLeftIcon, ArrowFatLineDownIcon, CalendarDotsIcon, WalletIcon } from '@phosphor-icons/react'
+import { ArrowArcLeftIcon, ArrowFatLineDownIcon, CalendarDotsIcon, WalletIcon, TrashIcon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { DEFAULT_CATEGORIES } from '@/lib/finance'
 import { formatBs } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import type { MonthBudgetState, SpendingSummary } from '@/types/finance'
+import type { MonthBudgetState, SpendingEntry, SpendingSummary } from '@/types/finance'
 
 interface CategoriesTabProps {
   spendingSummary: SpendingSummary
@@ -15,6 +22,7 @@ interface CategoriesTabProps {
   monthLabel: string
   onBudgetChange: (category: string, amount: number) => void
   onDistributeEquitably: () => void
+  onDeleteEntry?: (id: string) => void
 }
 
 function getProgressColors(ratio: number) {
@@ -42,7 +50,9 @@ export function CategoriesTab({
   monthLabel,
   onBudgetChange,
   onDistributeEquitably,
+  onDeleteEntry,
 }: CategoriesTabProps) {
+  const [previewEntry, setPreviewEntry] = useState<SpendingEntry | null>(null)
   const [drafts, setDrafts] = useState<Record<string, string>>(() => {
     const initialDrafts: Record<string, string> = {}
     for (const cat of DEFAULT_CATEGORIES) {
@@ -166,6 +176,7 @@ export function CategoriesTab({
           {DEFAULT_CATEGORIES.map((cat) => {
             const limit = selectedMonthState.categoryBudgets?.[cat] ?? 0
             const spent = categorySpentMap[cat] ?? 0
+            const remaining = limit - spent
             const ratio = limit <= 0 ? 0 : (spent / limit) * 100
             const colors = getProgressColors(ratio)
 
@@ -194,8 +205,21 @@ export function CategoriesTab({
                 </div>
 
                 <div className="flex items-center justify-between text-xs mt-0.5">
-                  <span className="text-muted-foreground font-semibold">
-                    Gastado: <span className="font-bold text-foreground font-mono">{formatBs(spent)}</span>
+                  <span className="text-muted-foreground font-semibold flex flex-wrap items-center gap-x-2">
+                    <span>
+                      Gastado: <span className="font-bold text-foreground font-mono">{formatBs(spent)}</span>
+                    </span>
+                    {limit > 0 && (
+                      <>
+                        <span className="text-white/10">•</span>
+                        <span>
+                          Disponible:{' '}
+                          <span className={cn('font-bold font-mono', remaining >= 0 ? 'text-primary' : 'text-destructive')}>
+                            {formatBs(remaining)}
+                          </span>
+                        </span>
+                      </>
+                    )}
                   </span>
                   <span className={cn('font-bold font-mono', colors.text)}>
                     {limit > 0 ? `${ratio.toFixed(0)}%` : 'Sin límite'}
@@ -216,38 +240,172 @@ export function CategoriesTab({
         </CardContent>
       </Card>
 
-      {/* Resumen Activo */}
-      <Card className="glass-panel surface-outline rounded-2xl border-white/10 bg-card/80 transition-all duration-300 hover:border-white/15">
-        <CardHeader className="px-4 sm:px-5">
-          <CardTitle className="text-lg font-bold text-foreground">Resumen activo</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 px-4 pb-4 sm:px-5 sm:pb-5">
-          <InsightRow
-            icon={<ArrowFatLineDownIcon size={18} />}
-            label="Saldo proyectado"
-            value={formatBs(spendingSummary.projectedMonthEnd)}
-          />
-          <InsightRow
-            icon={<ArrowArcLeftIcon size={18} />}
-            label="Modo efectivo"
-            value={
-              spendingSummary.effectiveMode === 'remaining-month'
-                ? 'Desde hoy'
-                : 'Mes completo'
-            }
-          />
-          <InsightRow
-            icon={<CalendarDotsIcon size={18} />}
-            label="Mes abierto"
-            value={monthLabel}
-          />
-          <InsightRow
-            icon={<WalletIcon size={18} />}
-            label="Registros cargados"
-            value={String(selectedMonthState.entries.length)}
-          />
-        </CardContent>
-      </Card>
+      {/* Resumen Activo y Tabla de Registros */}
+      <div className="flex flex-col gap-4">
+        {/* Resumen Activo */}
+        <Card className="glass-panel surface-outline rounded-2xl border-white/10 bg-card/80 transition-all duration-300 hover:border-white/15">
+          <CardHeader className="px-4 sm:px-5">
+            <CardTitle className="text-lg font-bold text-foreground">Resumen activo</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 px-4 pb-4 sm:px-5 sm:pb-5">
+            <InsightRow
+              icon={<ArrowFatLineDownIcon size={18} />}
+              label="Saldo proyectado"
+              value={formatBs(spendingSummary.projectedMonthEnd)}
+            />
+            <InsightRow
+              icon={<ArrowArcLeftIcon size={18} />}
+              label="Modo efectivo"
+              value={
+                spendingSummary.effectiveMode === 'remaining-month'
+                  ? 'Desde hoy'
+                  : 'Mes completo'
+              }
+            />
+            <InsightRow
+              icon={<CalendarDotsIcon size={18} />}
+              label="Mes abierto"
+              value={monthLabel}
+            />
+            <InsightRow
+              icon={<WalletIcon size={18} />}
+              label="Registros cargados"
+              value={String(selectedMonthState.entries.length)}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Historial de Registros */}
+        <Card className="glass-panel surface-outline rounded-2xl border-white/10 bg-card/80 transition-all duration-300 hover:border-white/15">
+          <CardHeader className="px-4 sm:px-5 pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-bold text-foreground">Todos los registros</CardTitle>
+              <span className="text-xs text-muted-foreground font-mono">
+                {selectedMonthState.entries.length} registros
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 sm:px-5 sm:pb-5">
+            <div className="max-h-[300px] overflow-y-auto pr-1">
+              {selectedMonthState.entries.length > 0 ? (
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full border-collapse text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-white/10 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                        <th className="pb-2.5 font-sans">Tipo/Categoría</th>
+                        <th className="pb-2.5 font-sans">Detalle</th>
+                        <th className="pb-2.5 text-right font-sans">Monto</th>
+                        <th className="pb-2.5 text-right font-sans w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {[...selectedMonthState.entries]
+                        .sort((left, right) => right.date.localeCompare(left.date))
+                        .map((entry) => (
+                          <tr
+                            key={entry.id}
+                            className="hover:bg-white/5 transition-colors cursor-pointer group"
+                            onClick={() => setPreviewEntry(entry)}
+                          >
+                            <td className="py-2.5 pr-2">
+                              <div className="flex flex-col gap-1">
+                                <span className="text-xs font-semibold text-foreground">Gasto</span>
+                                {entry.category ? (
+                                  <span className="w-fit inline-flex items-center rounded-md bg-primary/10 border border-primary/20 px-1.5 py-0.5 text-[9px] font-semibold text-primary">
+                                    {entry.category}
+                                  </span>
+                                ) : (
+                                  <span className="w-fit inline-flex items-center rounded-md bg-white/5 border border-white/10 px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground">
+                                    Sin categoría
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2.5 pr-2 min-w-0">
+                              <div className="flex flex-col">
+                                <span className="text-xs font-semibold font-mono text-foreground">{entry.date}</span>
+                                {entry.note && (
+                                  <span className="text-[11px] text-muted-foreground truncate max-w-[120px] sm:max-w-[160px] group-hover:text-foreground/90 transition-colors" title={entry.note}>
+                                    {entry.note}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2.5 text-right font-semibold font-mono text-xs text-foreground">
+                              {formatBs(entry.amountBs)}
+                            </td>
+                            <td className="py-2.5 text-right">
+                              {onDeleteEntry && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    onDeleteEntry(entry.id)
+                                  }}
+                                  className="text-muted-foreground hover:text-destructive p-1 rounded-md hover:bg-white/5 transition-colors cursor-pointer"
+                                  title="Eliminar gasto"
+                                >
+                                  <TrashIcon size={14} />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-white/10 px-3 py-6 text-sm leading-5 text-muted-foreground text-center">
+                  Aún no registraste gastos para este mes.
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Dialogo de Vista Previa */}
+      <Dialog open={!!previewEntry} onOpenChange={(open) => !open && setPreviewEntry(null)}>
+        <DialogContent className="max-w-[360px] p-5 sm:max-w-[400px] border border-white/10 bg-card/95 backdrop-blur-lg rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-foreground">Detalle del Registro</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Información completa de la transacción cargada.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {previewEntry && (
+            <div className="grid gap-4 mt-3">
+              <div className="grid grid-cols-2 gap-3 text-sm rounded-xl border border-white/8 bg-background/35 p-3.5">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground uppercase font-semibold">Tipo</span>
+                  <span className="font-semibold text-foreground">Gasto</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground uppercase font-semibold">Categoría</span>
+                  <span className="font-semibold text-foreground">
+                    {previewEntry.category || 'Sin categoría'}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5 mt-1">
+                  <span className="text-xs text-muted-foreground uppercase font-semibold">Fecha</span>
+                  <span className="font-semibold font-mono text-foreground">{previewEntry.date}</span>
+                </div>
+                <div className="flex flex-col gap-0.5 mt-1">
+                  <span className="text-xs text-muted-foreground uppercase font-semibold">Monto</span>
+                  <span className="font-bold font-mono text-primary">{formatBs(previewEntry.amountBs)}</span>
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-1 rounded-xl border border-white/8 bg-background/35 p-3.5">
+                <span className="text-xs text-muted-foreground uppercase font-semibold">Nota / Descripción</span>
+                <p className="text-sm text-foreground break-words leading-relaxed whitespace-pre-wrap">
+                  {previewEntry.note || <span className="text-xs text-muted-foreground italic">Sin nota o descripción detallada</span>}
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -13,6 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { buildIsoDate } from '@/lib/date'
 import { DEFAULT_CATEGORIES } from '@/lib/finance'
 import { formatBs } from '@/lib/format'
@@ -27,6 +34,7 @@ interface SpendingTabProps {
   referenceDateIso: string
   onAddEntry: (kind: SpendingEntryKind, amountBs: number, date: string, category?: string, note?: string) => void
   onDeleteEntry: (id: string) => void
+  onViewAll?: () => void
 }
 
 function getProgressColors(ratio: number) {
@@ -56,11 +64,13 @@ export function SpendingTab({
   referenceDateIso,
   onAddEntry,
   onDeleteEntry,
+  onViewAll,
 }: SpendingTabProps) {
   const [amountBs, setAmountBs] = useState('')
   const [date, setDate] = useState(referenceDateIso)
   const [category, setCategory] = useState('sin-categoria')
   const [note, setNote] = useState('')
+  const [previewEntry, setPreviewEntry] = useState<SpendingEntry | null>(null)
 
   const handleAddEntry = (kind: SpendingEntryKind) => {
     if (!amountBs) return
@@ -223,16 +233,30 @@ export function SpendingTab({
         <div className="grid gap-3">
           <div className="flex items-center justify-between">
             <p className="font-semibold text-sm text-foreground">Últimos registros</p>
-            <span className="text-xs text-muted-foreground font-mono">
-              {selectedMonthState.entries.length} en este mes
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground font-mono">
+                {selectedMonthState.entries.length} en este mes
+              </span>
+              {selectedMonthState.entries.length > 0 && onViewAll && (
+                <>
+                  <span className="text-muted-foreground/30">•</span>
+                  <button
+                    onClick={onViewAll}
+                    className="text-xs text-primary hover:text-primary/80 transition-colors font-semibold cursor-pointer outline-none"
+                  >
+                    Ver todos
+                  </button>
+                </>
+              )}
+            </div>
           </div>
           <div className="grid gap-2 max-h-[220px] overflow-y-auto pr-1">
             {latestEntries.length > 0 ? (
               latestEntries.map((entry) => (
                 <div
-                  className="flex items-center justify-between gap-3 rounded-xl border border-white/7 bg-white/3 px-3 py-2 transition-colors hover:bg-white/5"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-white/7 bg-white/3 px-3 py-2 transition-colors hover:bg-white/5 cursor-pointer group"
                   key={entry.id}
+                  onClick={() => setPreviewEntry(entry)}
                 >
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-sm text-foreground flex flex-wrap items-center gap-2">
@@ -243,7 +267,7 @@ export function SpendingTab({
                         </span>
                       )}
                     </p>
-                    <p className="text-xs text-muted-foreground font-mono truncate">
+                    <p className="text-xs text-muted-foreground font-mono truncate group-hover:text-foreground/90 transition-colors">
                       {entry.date} {entry.note ? `- ${entry.note}` : ''}
                     </p>
                   </div>
@@ -252,7 +276,10 @@ export function SpendingTab({
                       {formatBs(entry.amountBs)}
                     </span>
                     <button
-                      onClick={() => onDeleteEntry(entry.id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onDeleteEntry(entry.id)
+                      }}
                       className="text-muted-foreground hover:text-destructive p-1 rounded-md hover:bg-white/5 transition-colors cursor-pointer"
                       title="Eliminar gasto"
                     >
@@ -269,6 +296,50 @@ export function SpendingTab({
           </div>
         </div>
       </div>
+
+      {/* Dialogo de Vista Previa */}
+      <Dialog open={!!previewEntry} onOpenChange={(open) => !open && setPreviewEntry(null)}>
+        <DialogContent className="max-w-[360px] p-5 sm:max-w-[400px] border border-white/10 bg-card/95 backdrop-blur-lg rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-foreground">Detalle del Registro</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Información completa de la transacción cargada.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {previewEntry && (
+            <div className="grid gap-4 mt-3">
+              <div className="grid grid-cols-2 gap-3 text-sm rounded-xl border border-white/8 bg-background/35 p-3.5">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground uppercase font-semibold">Tipo</span>
+                  <span className="font-semibold text-foreground">Gasto</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground uppercase font-semibold">Categoría</span>
+                  <span className="font-semibold text-foreground">
+                    {previewEntry.category || 'Sin categoría'}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5 mt-1">
+                  <span className="text-xs text-muted-foreground uppercase font-semibold">Fecha</span>
+                  <span className="font-semibold font-mono text-foreground">{previewEntry.date}</span>
+                </div>
+                <div className="flex flex-col gap-0.5 mt-1">
+                  <span className="text-xs text-muted-foreground uppercase font-semibold">Monto</span>
+                  <span className="font-bold font-mono text-primary">{formatBs(previewEntry.amountBs)}</span>
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-1 rounded-xl border border-white/8 bg-background/35 p-3.5">
+                <span className="text-xs text-muted-foreground uppercase font-semibold">Nota / Descripción</span>
+                <p className="text-sm text-foreground break-words leading-relaxed whitespace-pre-wrap">
+                  {previewEntry.note || <span className="text-xs text-muted-foreground italic">Sin nota o descripción detallada</span>}
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -13,7 +13,7 @@ import { motion } from 'motion/react'
 import { useTheme } from 'next-themes'
 import { useEffect, useMemo, useState } from 'react'
 
-import { useLocalStorageState } from '@/hooks/use-local-storage'
+import { saveFinanceState } from '@/app/actions'
 import {
   STORAGE_KEY,
   calculateFxDifference,
@@ -86,23 +86,27 @@ const heroVariants = {
   },
 } as const
 
+import { DatabaseSyncCard } from './database-sync-card'
+
 export function FinanceDashboard({
   initialMonthKey,
   referenceDateIso,
+  initialDbState,
 }: {
   initialMonthKey: string
   referenceDateIso: string
+  initialDbState: FinanceAppState
 }) {
   const referenceDate = useMemo(() => new Date(`${referenceDateIso}T12:00:00`), [referenceDateIso])
   
   // Month is pinned to the current reference month key
   const activeMonthKey = initialMonthKey
 
-  const [state, setState, hydrated] = useLocalStorageState(
-    STORAGE_KEY,
-    createInitialFinanceState(activeMonthKey),
-    (value) => reviveFinanceState(value, activeMonthKey)
-  )
+  const [state, setState] = useState<FinanceAppState>(initialDbState)
+  const [isDirty, setIsDirty] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [hasLocalData, setHasLocalData] = useState(false)
 
   const [activeTab, setActiveTab] = useState<'spending' | 'exchange' | 'categories'>('spending')
   const [themeMounted, setThemeMounted] = useState(false)
@@ -110,9 +114,84 @@ export function FinanceDashboard({
 
   useEffect(() => {
     setThemeMounted(true)
+
+    // Check if there is data in localStorage to migrate
+    try {
+      const localData = window.localStorage.getItem(STORAGE_KEY)
+      if (localData) {
+        setHasLocalData(true)
+      }
+    } catch (e) {
+      console.error('Error checking localStorage:', e)
+    }
   }, [])
 
+  // Warn on page close if dirty
+  useEffect(() => {
+    if (!isDirty) return
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isDirty])
+
   const selectedMonthState = getMonthState(state.months, activeMonthKey)
+
+  const handleSave = async () => {
+    setSaveStatus('saving')
+    try {
+      const res = await saveFinanceState(activeMonthKey, selectedMonthState)
+      if (res.success) {
+        setSaveStatus('saved')
+        setIsDirty(false)
+        setLastSaved(new Date())
+
+        // Clear local storage after successful migration/save
+        try {
+          window.localStorage.removeItem(STORAGE_KEY)
+          setHasLocalData(false)
+        } catch (e) {
+          console.error('Error clearing localStorage:', e)
+        }
+      } else {
+        setSaveStatus('error')
+      }
+    } catch (error) {
+      console.error('Error saving state:', error)
+      setSaveStatus('error')
+    }
+  }
+
+  const handleDiscard = () => {
+    // Reset to server/initial DB state
+    setState(initialDbState)
+    setIsDirty(false)
+    setSaveStatus('idle')
+  }
+
+  const handleMigrate = () => {
+    try {
+      const localData = window.localStorage.getItem(STORAGE_KEY)
+      if (localData) {
+        const parsed = JSON.parse(localData)
+        const revived = reviveFinanceState(parsed, activeMonthKey)
+
+        setState((currentState) => ({
+          ...currentState,
+          months: {
+            ...currentState.months,
+            ...revived.months,
+          },
+        }))
+        setIsDirty(true)
+        setSaveStatus('idle')
+      }
+    } catch (e) {
+      console.error('Error migrating localStorage data:', e)
+    }
+  }
   
   const spendingSummary = useMemo(
     () => calculateSpendingSummary(activeMonthKey, selectedMonthState, referenceDate),
@@ -142,6 +221,8 @@ export function FinanceDashboard({
         },
       }
     })
+    setIsDirty(true)
+    setSaveStatus('idle')
   }
 
   function updatePlanningMode(mode: PlanningMode) {
@@ -247,12 +328,21 @@ export function FinanceDashboard({
                   value={formatCompactBs(spendingSummary.weeklyAllowance)}
                 />
               </div>
+              <DatabaseSyncCard
+                saveStatus={saveStatus}
+                isDirty={isDirty}
+                onSave={handleSave}
+                onDiscard={handleDiscard}
+                lastSaved={lastSaved}
+                hasLocalData={hasLocalData}
+                onMigrate={handleMigrate}
+              />
             </div>
 
             {/* Sidebar Controls */}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
               <ActiveMonthCard
-                hydrated={hydrated}
+                hydrated={true}
                 monthLabel={getMonthLabel(activeMonthKey)}
               />
               <QuickSettingsCard

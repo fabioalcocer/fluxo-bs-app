@@ -21,6 +21,7 @@ interface DatabaseSyncCardProps {
   lastSaved: Date | null
   hasLocalData: boolean
   onMigrate: () => void
+  flat?: boolean
 }
 
 export function DatabaseSyncCard({
@@ -31,6 +32,7 @@ export function DatabaseSyncCard({
   lastSaved,
   hasLocalData,
   onMigrate,
+  flat = false,
 }: DatabaseSyncCardProps) {
   const [isMigratedLocally, setIsMigratedLocally] = useState(false)
 
@@ -72,10 +74,13 @@ export function DatabaseSyncCard({
   }
 
   return (
-    <div className="rounded-2xl border border-white/8 bg-background/35 p-4 transition-all duration-300 hover:border-white/15">
+    <div className={flat ? "grid gap-3.5" : "rounded-2xl border border-white/8 bg-background/35 p-4 transition-all duration-300 hover:border-white/15"}>
       <div className="grid gap-3.5">
         {/* Card Header */}
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl border border-white/8 bg-white/4 p-2.5 text-primary shadow-[0_0_10px_-2px_rgba(138,247,211,0.1)]">
+            <DatabaseIcon size={20} weight="duotone" />
+          </div>
           <div>
             <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground font-semibold font-sans">
               Base de Datos
@@ -83,9 +88,6 @@ export function DatabaseSyncCard({
             <p className="mt-0.5 font-heading text-base font-bold tracking-tight">
               Turso Cloud
             </p>
-          </div>
-          <div className="rounded-xl border border-white/8 bg-white/4 p-2.5 text-primary shadow-[0_0_10px_-2px_rgba(138,247,211,0.1)]">
-            <DatabaseIcon size={20} weight="duotone" />
           </div>
         </div>
 

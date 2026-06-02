@@ -8,7 +8,19 @@ import {
   GaugeIcon,
   SparkleIcon,
   WalletIcon,
+  ArrowClockwiseIcon,
+  CloudArrowUpIcon,
+  DatabaseIcon,
+  WarningCircleIcon,
 } from '@phosphor-icons/react'
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { motion } from 'motion/react'
 import { useTheme } from 'next-themes'
 import { useEffect, useMemo, useState } from 'react'
@@ -328,15 +340,6 @@ export function FinanceDashboard({
                   value={formatCompactBs(spendingSummary.weeklyAllowance)}
                 />
               </div>
-              <DatabaseSyncCard
-                saveStatus={saveStatus}
-                isDirty={isDirty}
-                onSave={handleSave}
-                onDiscard={handleDiscard}
-                lastSaved={lastSaved}
-                hasLocalData={hasLocalData}
-                onMigrate={handleMigrate}
-              />
             </div>
 
             {/* Sidebar Controls */}
@@ -455,6 +458,61 @@ export function FinanceDashboard({
           </div>
         </section>
       </div>
+
+      {/* Floating Database Sync Dialog */}
+      <Dialog>
+        <DialogTrigger asChild>
+          <button
+            className={cn(
+              "fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full border shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer outline-none",
+              isDirty && saveStatus !== 'saving'
+                ? "border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/40 shadow-amber-500/10"
+                : saveStatus === 'saving'
+                ? "border-sky-500/30 bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 hover:border-sky-500/40 shadow-sky-500/10"
+                : saveStatus === 'error'
+                ? "border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:border-rose-500/40 shadow-rose-500/10"
+                : "border-white/10 bg-white/5 text-muted-foreground hover:text-white hover:border-white/20"
+            )}
+          >
+            {/* Glowing effect for unsaved changes */}
+            {isDirty && saveStatus !== 'saving' && (
+              <span className="absolute inset-0 rounded-full animate-ping bg-amber-500/20 pointer-events-none" />
+            )}
+            
+            {/* Action/Indicator Icon */}
+            {saveStatus === 'saving' ? (
+              <ArrowClockwiseIcon size={24} className="animate-spin" />
+            ) : saveStatus === 'error' ? (
+              <WarningCircleIcon size={24} className="animate-bounce" />
+            ) : isDirty ? (
+              <CloudArrowUpIcon size={24} className="animate-pulse" />
+            ) : (
+              <DatabaseIcon size={24} weight="duotone" />
+            )}
+
+            {/* Notification Badge Dot */}
+            {isDirty && (
+              <span className="absolute top-1 right-1 h-3.5 w-3.5 rounded-full border-2 border-background bg-amber-500" />
+            )}
+          </button>
+        </DialogTrigger>
+        <DialogContent className="max-w-[360px] p-5 sm:max-w-[400px] border border-white/10 bg-card/95 backdrop-blur-lg rounded-2xl">
+          <DialogHeader className="hidden">
+            <DialogTitle>Base de Datos</DialogTitle>
+            <DialogDescription>Sincronización en la nube</DialogDescription>
+          </DialogHeader>
+          <DatabaseSyncCard
+            saveStatus={saveStatus}
+            isDirty={isDirty}
+            onSave={handleSave}
+            onDiscard={handleDiscard}
+            lastSaved={lastSaved}
+            hasLocalData={hasLocalData}
+            onMigrate={handleMigrate}
+            flat={true}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

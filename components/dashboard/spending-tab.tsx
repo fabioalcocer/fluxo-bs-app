@@ -254,7 +254,7 @@ export function SpendingTab({
             {latestEntries.length > 0 ? (
               latestEntries.map((entry) => (
                 <div
-                  className="flex items-center justify-between gap-3 rounded-xl border border-white/7 bg-white/3 px-3 py-2 transition-colors hover:bg-white/5 cursor-pointer group"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-white/7 bg-white/3 px-3 py-2 transition-colors hover:bg-white/5 cursor-pointer group min-w-0"
                   key={entry.id}
                   onClick={() => setPreviewEntry(entry)}
                 >
@@ -267,7 +267,10 @@ export function SpendingTab({
                         </span>
                       )}
                     </p>
-                    <p className="text-xs text-muted-foreground font-mono truncate group-hover:text-foreground/90 transition-colors">
+                    <p 
+                      className="text-xs text-muted-foreground font-mono truncate max-w-[170px] sm:max-w-[280px] md:max-w-[340px] lg:max-w-[180px] xl:max-w-[280px] group-hover:text-foreground/90 transition-colors"
+                      title={entry.note ? `${entry.date} - ${entry.note}` : entry.date}
+                    >
                       {entry.date} {entry.note ? `- ${entry.note}` : ''}
                     </p>
                   </div>

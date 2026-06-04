@@ -22,7 +22,8 @@ export const DEFAULT_CATEGORIES = [
   'Cafeterias',
   'Despensa',
   'Fiestas',
-  'Transporte'
+  'Transporte',
+  'Lujos y extras'
 ]
 
 export function createEmptyMonthState(): MonthBudgetState {

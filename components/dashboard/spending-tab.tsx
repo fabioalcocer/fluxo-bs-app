@@ -72,6 +72,12 @@ export function SpendingTab({
   const [note, setNote] = useState('')
   const [previewEntry, setPreviewEntry] = useState<SpendingEntry | null>(null)
 
+  const totalSpent = spendingSummary.weekBreakdown.reduce((sum, w) => sum + w.spent, 0)
+  const totalPlanned = spendingSummary.weekBreakdown.reduce((sum, w) => sum + w.planned, 0)
+  const totalDeviation = totalSpent - totalPlanned
+  const totalRatio = totalPlanned <= 0 ? 0 : (totalSpent / totalPlanned) * 100
+  const totalColors = getProgressColors(totalRatio)
+
   const handleAddEntry = (kind: SpendingEntryKind) => {
     if (!amountBs) return
     const parsedAmount = Number(amountBs.replace(',', '.'))
@@ -150,6 +156,36 @@ export function SpendingTab({
             )
           })}
         </div>
+        {spendingSummary.weekBreakdown.length > 0 && (
+          <>
+            <Separator className="my-2 bg-white/8" />
+            <div className="rounded-xl border border-white/7 bg-white/3 p-3 transition-colors hover:bg-white/5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                    Total Gastado ({spendingSummary.weekBreakdown.length} semanas)
+                  </p>
+                  <p className="text-xl font-extrabold text-foreground mt-0.5">
+                    {formatBs(totalSpent)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                    Presupuesto Total
+                  </p>
+                  <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                    <span className="text-xs font-semibold text-foreground">
+                      {formatBs(totalPlanned)}
+                    </span>
+                    <span className={cn("text-xs font-semibold font-mono", totalColors.text)}>
+                      ({totalDeviation > 0 ? '+' : ''}{formatBs(totalDeviation)})
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Registrar Gasto y Últimos Registros */}
@@ -228,7 +264,6 @@ export function SpendingTab({
           Registrar Gasto
         </Button>
 
-        <Separator className="bg-white/8" />
 
         <div className="grid gap-3">
           <div className="flex items-center justify-between">

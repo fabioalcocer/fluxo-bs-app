@@ -316,7 +316,7 @@ export function FinanceDashboard({
               </div>
               <div className="grid gap-2">
                 <h1 className="tracking-tight text-foreground font-extrabold">Tu mes, en números claros.</h1>
-                <p className="max-w-2xl text-sm leading-6 mb-5 md:mb-10 text-muted-foreground sm:text-base">
+                <p className="max-w-2xl text-sm leading-6 mb-5 md:mb-8 text-muted-foreground sm:text-base">
                   Presupuesto, ritmo diario, semanas y tipo de cambio en una sola vista. Registra gastos y el resto se recalcula al instante.
                 </p>
               </div>
@@ -326,18 +326,29 @@ export function FinanceDashboard({
                   label="Disponible actual"
                   tone="primary"
                   value={formatCompactBs(spendingSummary.remainingBudget)}
+                  description="Presupuesto restante para el mes"
                 />
                 <MetricHighlight
                   icon={CalendarDotsIcon}
                   label="Ritmo diario"
                   tone="neutral"
                   value={formatCompactBs(spendingSummary.dailyAllowance)}
+                  description={
+                    spendingSummary.effectiveMode === 'remaining-month'
+                      ? `Límite por día para los ${spendingSummary.activeDaysCount} días restantes`
+                      : `Límite por día para los ${spendingSummary.activeDaysCount} días del mes`
+                  }
                 />
                 <MetricHighlight
                   icon={ChartLineUpIcon}
                   label="Ritmo semanal"
                   tone="neutral"
                   value={formatCompactBs(spendingSummary.weeklyAllowance)}
+                  description={
+                    spendingSummary.effectiveMode === 'remaining-month'
+                      ? `Límite por semana para las ${spendingSummary.activeWeeksCount} semanas restantes`
+                      : `Límite por semana para las ${spendingSummary.activeWeeksCount} semanas del mes`
+                  }
                 />
               </div>
             </div>

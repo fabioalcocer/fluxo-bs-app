@@ -73,9 +73,9 @@ export function SpendingTab({
   const [previewEntry, setPreviewEntry] = useState<SpendingEntry | null>(null)
 
   const totalSpent = spendingSummary.weekBreakdown.reduce((sum, w) => sum + w.spent, 0)
-  const totalPlanned = spendingSummary.weekBreakdown.reduce((sum, w) => sum + w.planned, 0)
-  const totalDeviation = totalSpent - totalPlanned
-  const totalRatio = totalPlanned <= 0 ? 0 : (totalSpent / totalPlanned) * 100
+  const totalBudget = spendingSummary.totalBudgetBs
+  const remainingBudget = spendingSummary.remainingBudget
+  const totalRatio = totalBudget <= 0 ? 0 : (totalSpent / totalBudget) * 100
   const totalColors = getProgressColors(totalRatio)
 
   const handleAddEntry = (kind: SpendingEntryKind) => {
@@ -175,10 +175,10 @@ export function SpendingTab({
                   </p>
                   <div className="flex items-center justify-end gap-1.5 mt-0.5">
                     <span className="text-xs font-semibold text-foreground">
-                      {formatBs(totalPlanned)}
+                      {formatBs(totalBudget)}
                     </span>
                     <span className={cn("text-xs font-semibold font-mono", totalColors.text)}>
-                      ({totalDeviation > 0 ? '+' : ''}{formatBs(totalDeviation)})
+                      ({formatBs(remainingBudget)})
                     </span>
                   </div>
                 </div>

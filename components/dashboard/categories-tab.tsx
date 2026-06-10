@@ -1,8 +1,11 @@
 'use client'
 
 import { useMemo, useState, useEffect, type ReactNode } from 'react'
-import { ArrowArcLeftIcon, ArrowFatLineDownIcon, CalendarDotsIcon, WalletIcon, TrashIcon } from '@phosphor-icons/react'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { ArrowArcLeftIcon, ArrowFatLineDownIcon, CalendarDotsIcon, WalletIcon, TrashIcon, XIcon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
@@ -11,6 +14,15 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { DEFAULT_CATEGORIES } from '@/lib/finance'
 import { formatBs } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -44,6 +56,18 @@ function getProgressColors(ratio: number) {
   }
 }
 
+function toDateKey(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+function formatDateLabel(date: Date | undefined, fallback: string) {
+  return date ? format(date, 'dd MMM yyyy', { locale: es }) : fallback
+}
+
 export function CategoriesTab({
   spendingSummary,
   selectedMonthState,
@@ -53,6 +77,9 @@ export function CategoriesTab({
   onDeleteEntry,
 }: CategoriesTabProps) {
   const [previewEntry, setPreviewEntry] = useState<SpendingEntry | null>(null)
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [startDateFilter, setStartDateFilter] = useState<Date | undefined>()
+  const [endDateFilter, setEndDateFilter] = useState<Date | undefined>()
   const [drafts, setDrafts] = useState<Record<string, string>>(() => {
     const initialDrafts: Record<string, string> = {}
     for (const cat of DEFAULT_CATEGORIES) {
@@ -125,6 +152,31 @@ export function CategoriesTab({
       const newLimit = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
       handleBudgetChange(cat, newLimit)
     }
+  }
+
+  const filteredEntries = useMemo(() => {
+    const startKey = startDateFilter ? toDateKey(startDateFilter) : undefined
+    const endKey = endDateFilter ? toDateKey(endDateFilter) : undefined
+
+    return [...selectedMonthState.entries]
+      .filter((entry) => {
+        const matchesCategory =
+          categoryFilter === 'all' ||
+          (categoryFilter === 'uncategorized' ? !entry.category : entry.category === categoryFilter)
+        const matchesStart = !startKey || entry.date >= startKey
+        const matchesEnd = !endKey || entry.date <= endKey
+
+        return matchesCategory && matchesStart && matchesEnd
+      })
+      .sort((left, right) => right.date.localeCompare(left.date))
+  }, [categoryFilter, endDateFilter, selectedMonthState.entries, startDateFilter])
+
+  const hasActiveFilters = categoryFilter !== 'all' || !!startDateFilter || !!endDateFilter
+
+  const clearEntryFilters = () => {
+    setCategoryFilter('all')
+    setStartDateFilter(undefined)
+    setEndDateFilter(undefined)
   }
 
   return (
@@ -278,16 +330,65 @@ export function CategoriesTab({
         {/* Historial de Registros */}
         <Card className="glass-panel surface-outline rounded-2xl border-white/10 bg-card/80 transition-all duration-300 hover:border-white/15">
           <CardHeader className="px-4 sm:px-5 pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-bold text-foreground">Todos los registros</CardTitle>
-              <span className="text-xs text-muted-foreground font-mono">
-                {selectedMonthState.entries.length} registros
-              </span>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle className="text-lg font-bold text-foreground">Todos los registros</CardTitle>
+                <span className="text-xs text-muted-foreground font-mono">
+                  {filteredEntries.length}/{selectedMonthState.entries.length} registros
+                </span>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[180px_1fr_auto] lg:items-center">
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger size="sm" className="w-full">
+                    <SelectValue placeholder="Categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="all">Todas las categorías</SelectItem>
+                      <SelectItem value="uncategorized">Sin categoría</SelectItem>
+                      {DEFAULT_CATEGORIES.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+
+                <div className="grid gap-2 sm:col-span-2 sm:grid-cols-2 lg:col-span-1">
+                  <DateFilterButton
+                    label={formatDateLabel(startDateFilter, 'Desde')}
+                    selected={startDateFilter}
+                    onSelect={setStartDateFilter}
+                    disabled={(date) => (endDateFilter ? date > endDateFilter : false)}
+                  />
+                  <DateFilterButton
+                    label={formatDateLabel(endDateFilter, 'Hasta')}
+                    selected={endDateFilter}
+                    onSelect={setEndDateFilter}
+                    disabled={(date) => (startDateFilter ? date < startDateFilter : false)}
+                  />
+                </div>
+
+                {hasActiveFilters && (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={clearEntryFilters}
+                    className="text-muted-foreground sm:col-start-2 sm:row-start-1 sm:justify-self-end lg:col-start-auto lg:row-start-auto"
+                    title="Limpiar filtros"
+                    aria-label="Limpiar filtros"
+                  >
+                    <XIcon />
+                  </Button>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4 sm:px-5 sm:pb-5">
             <div className="max-h-[300px] overflow-y-auto pr-1">
-              {selectedMonthState.entries.length > 0 ? (
+              {filteredEntries.length > 0 ? (
                 <div className="w-full overflow-x-auto">
                   <table className="w-full border-collapse text-left text-xs">
                     <thead>
@@ -299,14 +400,12 @@ export function CategoriesTab({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                      {[...selectedMonthState.entries]
-                        .sort((left, right) => right.date.localeCompare(left.date))
-                        .map((entry) => (
-                          <tr
-                            key={entry.id}
-                            className="hover:bg-white/5 transition-colors cursor-pointer group"
-                            onClick={() => setPreviewEntry(entry)}
-                          >
+                      {filteredEntries.map((entry) => (
+                        <tr
+                          key={entry.id}
+                          className="hover:bg-white/5 transition-colors cursor-pointer group"
+                          onClick={() => setPreviewEntry(entry)}
+                        >
                             <td className="py-2.5 pr-2">
                               <div className="flex flex-col gap-1">
                                 <span className="text-xs font-semibold text-foreground">Gasto</span>
@@ -348,10 +447,14 @@ export function CategoriesTab({
                                 </button>
                               )}
                             </td>
-                          </tr>
-                        ))}
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
+                </div>
+              ) : selectedMonthState.entries.length > 0 ? (
+                <div className="rounded-xl border border-dashed border-white/10 px-3 py-6 text-sm leading-5 text-muted-foreground text-center">
+                  No hay registros que coincidan con los filtros aplicados.
                 </div>
               ) : (
                 <div className="rounded-xl border border-dashed border-white/10 px-3 py-6 text-sm leading-5 text-muted-foreground text-center">
@@ -407,6 +510,45 @@ export function CategoriesTab({
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+function DateFilterButton({
+  label,
+  selected,
+  onSelect,
+  disabled,
+}: {
+  label: string
+  selected: Date | undefined
+  onSelect: (date: Date | undefined) => void
+  disabled?: (date: Date) => boolean
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            'w-full justify-start font-mono text-xs',
+            !selected && 'text-muted-foreground'
+          )}
+        >
+          <CalendarDotsIcon data-icon="inline-start" />
+          {label}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-auto p-0">
+        <Calendar
+          mode="single"
+          selected={selected}
+          onSelect={onSelect}
+          disabled={disabled}
+          locale={es}
+        />
+      </PopoverContent>
+    </Popover>
   )
 }
 
